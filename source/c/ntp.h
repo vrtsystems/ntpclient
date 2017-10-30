@@ -112,10 +112,12 @@ struct ntp_client_t {
  * @param[inout]	ntp_client	NTP client instance
  * @param[in]		addr		IPv6 address of NTP server
  * @param[in]		port		Port number of NTP server
+ * @param[in]		ttl		Message time-to-live
  */
 otError ntp_client_begin(otInstance* instance,
 		struct ntp_client_t* const ntp_client,
-		const otIp6Address addr, uint16_t port);
+		const otIp6Address addr, uint16_t port,
+		uint8_t ttl);
 
 /*!
  * Process the state of the NTP client.  This should be called in a loop.
