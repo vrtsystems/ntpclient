@@ -63,7 +63,7 @@ otError ntp_client_begin(otInstance* instance,
 	/*
 	 * Create a UDP socket, connect to the server, send the packet.
 	 */
-	ntp_client->error = otUdpOpen(thread_instance, &(ntp_client->socket),
+	ntp_client->error = otUdpOpen(instance, &(ntp_client->socket),
 			ntp_client_recv, (void*)ntp_client);
 	if (ntp_client->error != OT_ERROR_NONE)
 		return ntp_client->error;
@@ -77,7 +77,7 @@ otError ntp_client_begin(otInstance* instance,
 	if (!msg) {
 		/* Record new state */
 		ntp_client->state = NTP_CLIENT_INT_ERR;
-		ntp_client->error = ERROR_NO_BUFS;
+		ntp_client->error = OT_ERROR_NO_BUFS;
 
 		/* Close the socket */
 		otUdpClose(&(ntp_client->socket));
@@ -133,7 +133,7 @@ static void ntp_client_recv(
 		return;
 	}
 
-	int recv = otMessageRead(msg, otMessageGetOffset(msg),
+	uint16_t recv = otMessageRead(msg, otMessageGetOffset(msg),
 			(uint8_t*)(&(ntp_client->packet)),
 			sizeof(struct ntp_packet_t));
 	if (recv < sizeof(struct ntp_packet_t)) {
