@@ -121,7 +121,7 @@ struct ntp_client_t {
  */
 otError ntp_client_begin(otInstance* instance,
 		struct ntp_client_t* const ntp_client,
-		const otIp6Address addr, uint16_t port,
+		const otIp6Address* addr, uint16_t port,
 		uint8_t ttl);
 
 /*!

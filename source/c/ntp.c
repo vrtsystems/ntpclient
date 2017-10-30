@@ -38,7 +38,7 @@ static void ntp_client_recv(
  */
 otError ntp_client_begin(otInstance* instance,
 		struct ntp_client_t* const ntp_client,
-		const otIp6Address addr, uint16_t port, uint8_t ttl) {
+		const otIp6Address* addr, uint16_t port, uint8_t ttl) {
 	/* Validate inputs */
 	if (!instance)
 		return OT_ERROR_PARSE;
@@ -87,7 +87,7 @@ otError ntp_client_begin(otInstance* instance,
 
 	memset(&msg_info, 0, sizeof(otMessageInfo));
 	memcpy(&(msg_info.mPeerAddr),
-			&addr, sizeof(otIp6Address));
+			addr, sizeof(otIp6Address));
 	msg_info.mPeerPort = port;
 	msg_info.mHopLimit = ttl;
 
