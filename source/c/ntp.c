@@ -10,6 +10,7 @@
 
 #include "ntp.h"
 #include <string.h>
+#include <machine/endian.h>
 
 #define NTP_TIMESTAMP_DELTA	(2208988800ull)
 
