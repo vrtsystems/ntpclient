@@ -127,6 +127,8 @@ otError ntp_client_begin(otInstance* instance,
 static void ntp_client_recv(
 		void* context, otMessage* msg,
 		const otMessageInfo* msg_info) {
+	(void)msg_info;
+
 	struct ntp_client_t* ntp_client = (struct ntp_client_t*)context;
 
 	if (ntp_client->state != NTP_CLIENT_SENT) {
