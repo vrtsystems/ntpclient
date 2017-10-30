@@ -14,6 +14,11 @@
 #include <openthread/ip6.h>
 #include <openthread/udp.h>
 
+/*!
+ * Standard NTP port number.
+ */
+#define NTP_CLIENT_DEFAULT_PORT	(123)
+
 /*! Structure that defines the 48 byte NTP packet protocol. */
 struct ntp_packet_t {
 	/*! Only two bits. Leap indicator. */
