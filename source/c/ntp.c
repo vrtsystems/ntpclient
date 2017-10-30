@@ -9,8 +9,7 @@
  */
 
 #include "ntp.h"
-#include <openthread/ip6.h>
-#include <openthread/udp.h>
+#include <string.h>
 
 #define NTP_TIMESTAMP_DELTA	(2208988800ull)
 
