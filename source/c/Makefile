@@ -9,6 +9,12 @@ SOURCES_C = $(wildcard $(SOURCE_DIR)/*.c)
 OBJECTS_C = $(patsubst $(SOURCE_DIR),$(BUILD_DIR), $(SOURCES_C:.c=.o))
 
 all: $(BUILD_DIR)/$(TARGET)
+install:
+	install -d $(INSTALL_DIR)/include/ntp
+	install -t $(INSTALL_DIR)/include/ntp $(wildcard $(SOURCE_DIR)/*.h)
+	install -d $(INSTALL_DIR)/lib
+	install -t $(INSTALL_DIR)/lib $(wildcard $(BUILD_DIR)/*.a)
+
 clean:
 	-rm -f $(BUILD_DIR)/$(TARGET) $(OBJECTS_C) $(BUILD_DIR)
 
