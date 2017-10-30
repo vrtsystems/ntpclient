@@ -11,6 +11,8 @@
 #include <stdint.h>
 #include <sys/time.h>
 #include <openthread/types.h>
+#include <openthread/ip6.h>
+#include <openthread/udp.h>
 
 /*! Structure that defines the 48 byte NTP packet protocol. */
 struct ntp_packet_t {
