@@ -158,12 +158,12 @@ static void ntp_client_recv_done(struct ntp_client_t* const ntp_client) {
 	/*
 	 * These two fields contain the time-stamp seconds as the packet left
 	 * the NTP server.  The number of seconds correspond to the seconds
-	 * passed since 1900.  ntohl() converts the bit/byte order from the
+	 * passed since 1900.  __ntohl() converts the bit/byte order from the
 	 * network's to host's "endianness".
 	 */
 
-	ntp_client->packet.txTm_s = ntohl( ntp_client->packet.txTm_s );
-	ntp_client->packet.txTm_f = ntohl( ntp_client->packet.txTm_f );
+	ntp_client->packet.txTm_s = __ntohl( ntp_client->packet.txTm_s );
+	ntp_client->packet.txTm_f = __ntohl( ntp_client->packet.txTm_f );
 
 	/*
 	 * Extract the 32 bits that represent the time-stamp seconds
@@ -173,7 +173,7 @@ static void ntp_client_recv_done(struct ntp_client_t* const ntp_client) {
 	 * This leaves the seconds since the UNIX epoch of 1970.
 	 */
 
-	ntp_client->tv.tv_secs = (time_t)(
+	ntp_client->tv.tv_sec = (time_t)(
 			ntp_client->packet.txTm_s
 			- NTP_TIMESTAMP_DELTA);
 
