@@ -65,6 +65,8 @@ otError ntp_client_listen(otInstance* instance,
 
 	/* Copy in the instance information */
 	ntp_client->instance = instance;
+	ntp_client->handler = handler;
+	ntp_client->handler_context = handler_context;
 
 	/*
 	 * If multicast, ensure the multicast IP is added.  We don't know if
@@ -136,7 +138,9 @@ otError ntp_client_shutdown(struct ntp_client_t* const ntp_client) {
  */
 otError ntp_client_begin(otInstance* instance,
 		struct ntp_client_t* const ntp_client,
-		const otIp6Address* addr, uint16_t port, uint8_t ttl) {
+		const otIp6Address* addr, uint16_t port, uint8_t ttl,
+		ntp_client_event_handler_t* handler,
+		void* handler_context) {
 	/* Validate inputs */
 	if (!instance)
 		return OT_ERROR_PARSE;
@@ -150,6 +154,8 @@ otError ntp_client_begin(otInstance* instance,
 
 	/* Copy in the instance information */
 	ntp_client->instance = instance;
+	ntp_client->handler = handler;
+	ntp_client->handler_context = handler_context;
 
 	/*
 	 * Set the first byte's bits to 00,011,011 for li = 0, vn = 3, and
