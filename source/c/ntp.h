@@ -9,6 +9,7 @@
  */
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <sys/time.h>
 #include <openthread/types.h>
 #include <openthread/ip6.h>
@@ -67,47 +68,76 @@ struct ntp_packet_t {
 };
 
 /*!
+ * NTP Client event handler callback.  This is called each time the NTP client
+ * receives an error or time update.  Context may be accessed via
+ * `ntp_client->handler_context`.
+ *
+ * @param	ntp_client	NTP client instance
+ */
+typedef void (*ntp_client_event_handler_t)(struct ntp_client_t* ntp_client);
+
+/*!
  * NTP client state.  Due to the asynchronous nature of the OpenThread network
  * APIs, the underlying state of a request needs to be handled in the
  * following struct.
  */
 struct ntp_client_t {
 	/*! OpenThread instance */
-	otInstance*		instance;
+	otInstance*			instance;
+
+	/*! Event handler callback */
+	ntp_client_event_handler_t*	handler;
+
+	/*! Event handler callback context */
+	void*				handler_context;
 
 	/*! UDP socket */
-	otUdpSocket		socket;
+	otUdpSocket			socket;
 
 	/*! NTP packet payload */
-	struct ntp_packet_t	packet;
+	struct ntp_packet_t		packet;
 
 	/*! Received timestamp information */
-	struct timeval		tv;
+	struct timeval			tv;
 
 	/*! Result state */
-	otError			error;
+	otError				error;
 
 	/*! Timeout remaining */
-	uint16_t		timeout;
+	uint16_t			timeout;
 
 	/*! Client state */
-	uint8_t			state;
+	uint8_t				state;
 };
 
 /*! Client is being initialised */
 #define NTP_CLIENT_INIT		(0x00)
+/*! Client is listening for broadcasts */
+#define NTP_CLIENT_LISTEN	(0x10)
 /*! Client has sent the request and is waiting */
 #define NTP_CLIENT_SENT		(0x20)
 /*! Client has received a reply from the NTP server. */
 #define NTP_CLIENT_RECV		(0xa0)
+/*! Client has received a broadcast the NTP server. */
+#define NTP_CLIENT_RECV_BC	(0xb0)
 /*! Client received truncated data */
 #define NTP_CLIENT_ERR_TRUNC	(0xe0)
+/*! Client received truncated broadcast data */
+#define NTP_CLIENT_ERR_BC_TRUNC	(0xeb)
 /*! Client has processed the reply and is now done. */
 #define NTP_CLIENT_DONE		(0xf0)
 /*! Client had an internal error. */
 #define NTP_CLIENT_INT_ERR	(0xf1)
+/*! Communications error with server */
+#define NTP_CLIENT_COMM_ERR	(0xfc)
 /*! Client did not receive a reply and has timed out. */
 #define NTP_CLIENT_TIMEOUT	(0xff)
+
+/*! Return true if the state is final */
+static inline _Bool ntp_client_is_done(
+		const struct ntp_client_t* const ntp_client) {
+	return (ntp_client->state >= 0xf0);
+}
 
 /*!
  * Initiate a poll of an NTP server.
@@ -118,13 +148,41 @@ struct ntp_client_t {
  * @param[in]		addr		IPv6 address of NTP server
  * @param[in]		port		Port number of NTP server
  * @param[in]		ttl		Message time-to-live
+ * @param[in]		handler		NTP event handler
+ * @param[in]		handler_context	NTP event handler context
  */
 otError ntp_client_begin(otInstance* instance,
 		struct ntp_client_t* const ntp_client,
 		const otIp6Address* addr, uint16_t port,
-		uint8_t ttl);
+		uint8_t ttl,
+		ntp_client_event_handler_t* handler,
+		void* handler_context);
+
+/*!
+ * Listen for broadcast NTP time updates from an NTP server.
+ *
+ * @param[inout]	instance	OpenThread instance to use for this
+ * 					client's context.
+ * @param[inout]	ntp_client	NTP client instance
+ * @param[in]		addr		IPv6 address of NTP server
+ * @param[in]		port		Port number of NTP server
+ * @param[in]		handler		NTP event handler
+ * @param[in]		handler_context	NTP event handler context
+ */
+otError ntp_client_listen(otInstance* instance,
+		struct ntp_client_t* const ntp_client,
+		const otIp6Address* addr, uint16_t port,
+		ntp_client_event_handler_t* handler,
+		void* handler_context);
+
+/*!
+ * Shutdown a listening client.
+ * @param[inout]	ntp_client	NTP client instance
+ */
+otError ntp_client_shutdown(struct ntp_client_t* const ntp_client);
 
 /*!
  * Process the state of the NTP client.  This should be called in a loop.
+ * @param[inout]	ntp_client	NTP client instance
  */
 void ntp_client_process(struct ntp_client_t* const ntp_client);

@@ -27,6 +27,93 @@ static void ntp_client_recv(
 		const otMessageInfo *msg_info);
 
 /*!
+ * Listen for broadcast NTP time updates from an NTP server.
+ *
+ * @param[inout]	instance	OpenThread instance to use for this
+ * 					client's context.
+ * @param[inout]	ntp_client	NTP client instance
+ * @param[in]		addr		IPv6 address of NTP server
+ * @param[in]		port		Port number of NTP server
+ * @param[in]		handler		NTP event handler
+ * @param[in]		handler_context	NTP event handler context
+ */
+otError ntp_client_listen(otInstance* instance,
+		struct ntp_client_t* const ntp_client,
+		const otIp6Address* addr, uint16_t port,
+		ntp_client_event_handler_t* handler,
+		void* handler_context) {
+	/* Validate inputs */
+	if (!instance)
+		return OT_ERROR_PARSE;
+	if (!ntp_client)
+		return OT_ERROR_PARSE;
+	if (ntp_client->state)
+		return OT_ERROR_ALREADY;
+
+	/* Create and zero out the state. */
+	memset(ntp_client, 0, sizeof(struct ntp_client_t));
+
+	/* Copy in the instance information */
+	ntp_client->instance = instance;
+
+	/*
+	 * If multicast, ensure the multicast IP is added.  We don't know if
+	 * it's multicast (OpenThread won't tell us), but we can just try it.
+	 */
+	ntp_client->error = otIp6SubscribeMulticastAddress(instance, addr);
+	switch (ntp_client->error) {
+	case OT_ERROR_NONE:
+		/*
+		 * Okay, we're subscribed.
+		 * TODO: set flag to unsubscribe later
+		 */
+		break;
+	case OT_ERROR_ALREADY:
+		/* Already unsubscribed, don't unsubscribe later. */
+		break;
+	case OT_ERROR_INVALID_ARGS:
+		/* Not a multicast address?  We can ignore this. */
+		break;
+	default:
+		/* We have a problem */
+		return ntp_client->error;
+	}
+
+	/*
+	 * Create a UDP socket, connect to the server, send the packet.
+	 */
+	ntp_client->error = otUdpOpen(instance, &(ntp_client->socket),
+			ntp_client_recv, (void*)ntp_client);
+	if (ntp_client->error != OT_ERROR_NONE)
+		return ntp_client->error;
+
+	/* Now we're listening */
+	ntp_client->state = NTP_CLIENT_LISTEN;
+	return ntp_client->error;
+}
+
+static otError _ntp_client_shutdown(struct ntp_client_t* const ntp_client) {
+	/* Close off the socket, we're done now */
+	ntp_client->error = otUdpClose(&(ntp_client->socket));
+	if (ntp_client->error != OT_ERROR_NONE) {
+		ntp_client->state = NTP_CLIENT_INT_ERR;
+		return ntp_client->error;
+	}
+}
+
+/*!
+ * Shutdown a listening client.
+ * @param[inout]	ntp_client	NTP client instance
+ */
+otError ntp_client_shutdown(struct ntp_client_t* const ntp_client) {
+	_ntp_client_shutdown(ntp_client);
+	if (!ntp_client_is_done(ntp_client)) {
+		ntp_client->state = NTP_CLIENT_DONE;
+	}
+	return ntp_client->error;
+}
+
+/*!
  * Initiate a poll of an NTP server.
  *
  * @param[inout]	instance	OpenThread instance to use for this
@@ -131,7 +218,8 @@ static void ntp_client_recv(
 
 	struct ntp_client_t* ntp_client = (struct ntp_client_t*)context;
 
-	if (ntp_client->state != NTP_CLIENT_SENT) {
+	if ((ntp_client->state != NTP_CLIENT_SENT)
+			&& (ntp->client->state != NTP_CLIENT_LISTEN)) {
 		/* Invalid state, do nothing */
 		return;
 	}
@@ -140,9 +228,13 @@ static void ntp_client_recv(
 			(uint8_t*)(&(ntp_client->packet)),
 			sizeof(struct ntp_packet_t));
 	if (recv < sizeof(struct ntp_packet_t)) {
-		ntp_client->state = NTP_CLIENT_ERR_TRUNC;
+		ntp_client->state = (ntp_client->state == NTP_CLIENT_SENT)
+				? NTP_CLIENT_ERR_TRUNC
+				: NTP_CLIENT_ERR_BC_TRUNC;
 	} else {
-		ntp_client->state = NTP_CLIENT_RECV;
+		ntp_client->state = (ntp_client->state == NTP_CLIENT_SENT)
+				? NTP_CLIENT_RECV
+				: NTP_CLIENT_RECV_BC;
 	}
 }
 
@@ -150,11 +242,12 @@ static void ntp_client_recv(
  * Handling of received data.
  */
 static void ntp_client_recv_done(struct ntp_client_t* const ntp_client) {
-	/* Close off the socket, we're done now */
-	ntp_client->error = otUdpClose(&(ntp_client->socket));
-	if (ntp_client->error != OT_ERROR_NONE) {
-		ntp_client->state = NTP_CLIENT_INT_ERR;
-		return;
+	if (ntp_client->state == NTP_CLIENT_RECV) {
+		/* Close off the socket, we're done now */
+		_ntp_client_shutdown(ntp_client);
+		if (ntp_client_is_done(ntp_client)) {
+			return;
+		}
 	}
 
 	/*
@@ -186,7 +279,21 @@ static void ntp_client_recv_done(struct ntp_client_t* const ntp_client) {
 	ntp_client->tv.tv_usec = ntp_client->packet.txTm_f
 		/ NTP_TS_FRAC_PER_US;
 
-	ntp_client->state = NTP_CLIENT_DONE;
+	/* If there's a handler, call it now */
+	if (ntp_client->handler) {
+		(ntp_client->handler)(ntp_client);
+	}
+
+	switch (ntp_client->state) {
+	case NTP_CLIENT_RECV:
+		ntp_client->state = NTP_CLIENT_DONE;
+		break;
+	case NTP_CLIENT_RECV_BC:
+		ntp_client->state = NTP_CLIENT_LISTEN;
+		break;
+	default:
+		break;
+	}
 }
 
 /*!
@@ -194,9 +301,8 @@ static void ntp_client_recv_done(struct ntp_client_t* const ntp_client) {
  */
 static void ntp_client_recv_timeout(struct ntp_client_t* const ntp_client) {
 	/* Close off the socket, we're done now */
-	ntp_client->error = otUdpClose(&(ntp_client->socket));
-	if (ntp_client->error != OT_ERROR_NONE) {
-		ntp_client->state = NTP_CLIENT_INT_ERR;
+	_ntp_client_shutdown(ntp_client);
+	if (ntp_client_is_done(ntp_client)) {
 		return;
 	}
 
@@ -218,7 +324,21 @@ void ntp_client_process(struct ntp_client_t* const ntp_client) {
 		}
 		break;
 	case NTP_CLIENT_RECV:
+	case NTP_CLIENT_RECV_BC:
 		ntp_client_recv_done(ntp_client);
+		break;
+	case NTP_CLIENT_ERR_TRUNC:
+		/*
+		 * Received unicast reply was truncated, fail
+		 */
+		ntp_client->state = NTP_CLIENT_COMM_ERR;
+		break;
+	case NTP_CLIENT_ERR_BC_TRUNC:
+		/*
+		 * If there was an error with truncated data, listen for next
+		 * message (handler should have seen the error).
+		 */
+		ntp_client->state = NTP_CLIENT_LISTEN;
 		break;
 	default:
 		/* Do nothing */
