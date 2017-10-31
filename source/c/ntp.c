@@ -236,7 +236,7 @@ static void ntp_client_recv(
 	struct ntp_client_t* ntp_client = (struct ntp_client_t*)context;
 
 	if ((ntp_client->state != NTP_CLIENT_SENT)
-			&& (ntp->client->state != NTP_CLIENT_LISTEN)) {
+			&& (ntp_client->state != NTP_CLIENT_LISTEN)) {
 		/* Invalid state, do nothing */
 		return;
 	}
@@ -298,7 +298,7 @@ static void ntp_client_recv_done(struct ntp_client_t* const ntp_client) {
 
 	/* If there's a handler, call it now */
 	if (ntp_client->handler) {
-		(ntp_client->handler)(ntp_client);
+		(ntp_client->*handler)(ntp_client);
 	}
 
 	switch (ntp_client->state) {
