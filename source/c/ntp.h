@@ -89,7 +89,7 @@ struct ntp_client_t {
 	otInstance*			instance;
 
 	/*! Event handler callback */
-	ntp_client_event_handler_t*	handler;
+	ntp_client_event_handler_t	handler;
 
 	/*! Event handler callback context */
 	void*				handler_context;
@@ -158,7 +158,7 @@ otError ntp_client_begin(otInstance* instance,
 		struct ntp_client_t* const ntp_client,
 		const otIp6Address* addr, uint16_t port,
 		uint8_t ttl,
-		ntp_client_event_handler_t* handler,
+		ntp_client_event_handler_t handler,
 		void* handler_context);
 
 /*!
@@ -175,7 +175,7 @@ otError ntp_client_begin(otInstance* instance,
 otError ntp_client_listen(otInstance* instance,
 		struct ntp_client_t* const ntp_client,
 		const otIp6Address* addr, uint16_t port,
-		ntp_client_event_handler_t* handler,
+		ntp_client_event_handler_t handler,
 		void* handler_context);
 
 /*!

@@ -50,7 +50,7 @@ static void _ntp_client_shutdown(struct ntp_client_t* const ntp_client) {
 otError ntp_client_listen(otInstance* instance,
 		struct ntp_client_t* const ntp_client,
 		const otIp6Address* addr, uint16_t port,
-		ntp_client_event_handler_t* handler,
+		ntp_client_event_handler_t handler,
 		void* handler_context) {
 	/* Validate inputs */
 	if (!instance)
@@ -139,7 +139,7 @@ otError ntp_client_shutdown(struct ntp_client_t* const ntp_client) {
 otError ntp_client_begin(otInstance* instance,
 		struct ntp_client_t* const ntp_client,
 		const otIp6Address* addr, uint16_t port, uint8_t ttl,
-		ntp_client_event_handler_t* handler,
+		ntp_client_event_handler_t handler,
 		void* handler_context) {
 	/* Validate inputs */
 	if (!instance)
@@ -298,7 +298,7 @@ static void ntp_client_recv_done(struct ntp_client_t* const ntp_client) {
 
 	/* If there's a handler, call it now */
 	if (ntp_client->handler) {
-		(*(ntp_client->handler))(ntp_client);
+		(ntp_client->handler)(ntp_client);
 	}
 
 	switch (ntp_client->state) {
