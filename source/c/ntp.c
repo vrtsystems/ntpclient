@@ -298,7 +298,7 @@ static void ntp_client_recv_done(struct ntp_client_t* const ntp_client) {
 
 	/* If there's a handler, call it now */
 	if (ntp_client->handler) {
-		(ntp_client->*handler)(ntp_client);
+		(*(ntp_client->handler))(ntp_client);
 	}
 
 	switch (ntp_client->state) {
