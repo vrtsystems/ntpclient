@@ -80,12 +80,22 @@ otError ntp_client_listen(otInstance* instance,
 	}
 
 	/*
-	 * Create a UDP socket, connect to the server, send the packet.
+	 * Create a UDP socket, listen
 	 */
 	ntp_client->error = otUdpOpen(instance, &(ntp_client->socket),
 			ntp_client_recv, (void*)ntp_client);
 	if (ntp_client->error != OT_ERROR_NONE)
 		return ntp_client->error;
+
+	otSockAddr sockaddr;
+	memset(&sockaddr, 0, sizeof(otSockAddr));
+	memcpy(&sockaddr.mAddress, addr, sizeof(otIp6Address));
+	sockaddr.mPort = port;
+	ntp_client->error = otUdpBind(&(ntp_client->socket), &sockaddr);
+	if (ntp_client->error != OT_ERROR_NONE) {
+		_ntp_client_shutdown(ntp_client);
+		return ntp_client->error;
+	}
 
 	/* Now we're listening */
 	ntp_client->state = NTP_CLIENT_LISTEN;
