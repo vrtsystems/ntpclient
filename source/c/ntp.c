@@ -27,12 +27,12 @@ static void ntp_client_recv(
 		const otMessageInfo *msg_info);
 
 /* Shutdown code, closes off socket or sets an error condition */
-static otError _ntp_client_shutdown(struct ntp_client_t* const ntp_client) {
+static void _ntp_client_shutdown(struct ntp_client_t* const ntp_client) {
 	/* Close off the socket, we're done now */
 	ntp_client->error = otUdpClose(&(ntp_client->socket));
 	if (ntp_client->error != OT_ERROR_NONE) {
 		ntp_client->state = NTP_CLIENT_INT_ERR;
-		return ntp_client->error;
+		return;
 	}
 }
 
