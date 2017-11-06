@@ -13,7 +13,7 @@ install: all
 	install -d $(INSTALL_DIR)/include/ntp
 	install -t $(INSTALL_DIR)/include/ntp -m 0644 $(wildcard $(SOURCE_DIR)/*.h)
 	install -d $(INSTALL_DIR)/lib
-	install -t $(INSTALL_DIR)/lib -m 0644 $(wildcard $(BUILD_DIR)/*.a)
+	install -t $(INSTALL_DIR)/lib -m 0644 $(BUILD_DIR)/$(TARGET)
 
 clean:
 	-rm -f $(BUILD_DIR)/$(TARGET) $(OBJECTS_C) $(BUILD_DIR)
