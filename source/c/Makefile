@@ -6,7 +6,7 @@ SOURCE_DIR ?= $(PWD)
 BUILD_DIR ?= $(PWD)/build
 
 SOURCES_C = $(wildcard $(SOURCE_DIR)/*.c)
-OBJECTS_C = $(patsubst $(SOURCE_DIR),$(BUILD_DIR), $(SOURCES_C:.c=.o))
+OBJECTS_C = $(patsubst $(SOURCE_DIR)/%,$(BUILD_DIR)/%,$(SOURCES_C:.c=.o))
 
 all: $(BUILD_DIR)/$(TARGET)
 install: all
