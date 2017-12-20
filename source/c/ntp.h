@@ -104,13 +104,13 @@ struct ntp_client_t {
 	struct timeval			tv;
 
 	/*! Result state */
-	otError				error;
+	volatile otError		error;
 
 	/*! Timeout remaining */
-	uint16_t			timeout;
+	volatile uint16_t		timeout;
 
 	/*! Client state */
-	uint8_t				state;
+	volatile uint8_t		state;
 };
 
 /*! Client is being initialised */
