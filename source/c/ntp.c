@@ -11,6 +11,7 @@
 #include "ntp.h"
 #include <string.h>
 #include <machine/endian.h>
+#include <openthread/message.h>
 
 #define NTP_TIMESTAMP_DELTA	(2208988800ull)
 
@@ -178,7 +179,11 @@ otError ntp_client_begin(otInstance* instance,
 	 */
 
 	otMessageInfo msg_info;
-	otMessage* msg = otUdpNewMessage(instance, true);
+	otMessageSettings msgSettings;
+	msgSettings.mLinkSecurityEnabled = true;
+	msgSettings.mPriority = 0;
+
+	otMessage* msg = otUdpNewMessage(instance, &msgSettings);
 	if (!msg) {
 		/* Record new state */
 		ntp_client->state = NTP_CLIENT_INT_ERR;
